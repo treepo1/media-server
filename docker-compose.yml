@@ -1,0 +1,93 @@
+version: '3'
+
+name: 'media'
+
+services:
+  qbittorrent:
+    image: linuxserver/qbittorrent:latest
+    restart: unless-stopped
+    environment:
+      - TZ=America/Sao_Paulo
+      - WEBUI_PORT=8080
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - /home/thiagof/qbittorrent/config:/config
+      - /media/thiagof/ECB08FE2B08FB21E/Downloads/torrents:/downloads
+    ports:
+      - '8080:8080'
+      - '62609:62609'
+
+  jackett:
+    image: ghcr.io/linuxserver/jackett:latest
+    restart: unless-stopped
+    environment:
+      - TZ=America/Sao_Paulo
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - /home/thiagof/jackett/downloads:/downloads
+      - /home/thiagof/jackett/config:/config
+    ports:
+      - '9117:9117'
+
+
+
+  prowlarr:
+    networks:
+      default:
+        aliases:
+          - prowlarr 
+    image: ghcr.io/hotio/prowlarr:latest
+    restart: unless-stopped
+    environment:
+      - TZ=America/Sao_Paulo
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - /home/thiagof/prowlarr/config:/config
+    ports:
+      - '9696:9696'
+
+
+
+  radarr:
+    networks:
+      default:
+        aliases:
+          - radarr
+    image: ghcr.io/linuxserver/radarr:latest
+    restart: unless-stopped
+    depends_on:
+      - qbittorrent
+    environment:
+      - TZ=America/Sao_Paulo
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - /home/thiagof/radarr/appdata/config:/config
+      - /media/thiagof/ECB08FE2B08FB21E/Downloads/torrents:/downloads
+      - /media/thiagof/ECB08FE2B08FB21E/Filmes:/movies
+
+    ports:
+      - '7878:7878'
+
+
+  plex:
+    image: plexinc/pms-docker:latest
+    restart: unless-stopped
+    environment:
+      - TZ=America/Sao_Paulo
+      - PUID=1000
+      - PGID=1000
+      - VA_DRIVER=IHD
+      - PLEX_HW_TRANS_MAX=16
+    volumes:
+      - /home/thiagof/plex/config:/config
+      - /home/thiagof/plex/data:/data
+      - /home/thiagof/plex/transcode:/transcode
+      - /media/thiagof/ECB08FE2B08FB21E:/media
+    devices:
+      - /dev/dri:/dev/dri
+      - /dev/bus/usb:/dev/bus/usb
+    network_mode: host
